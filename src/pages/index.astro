@@ -1,11 +1,18 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import { EMAIL } from '../consts.ts';
+const pageTitle = "haval0 website";
 ---
-
-<Layout>
-	<Welcome />
+<Layout pageTitle={pageTitle}>
+	<div class="grid-container">
+		<div>
+			<h2>Hello dude</h2>
+			<p>This is a website. You might say it looks WIP but I'd say it's just lo-fi and trendy. I am a Stockholm-based CS student looking for work. Check out my <a href="/projects">projects</a> and shoot me an <a href={`mailto:${EMAIL}`}>email</a>.</p>
+		</div>
+		<div>
+			<h2>Fun stuff</h2>
+			<p><a href="https://open.spotify.com/album/3qgDvO08Y80fcmDPw1k5Kw" target="_blank">This album</a> is pretty good. Give it a go. Not-so-K-Pop.</p>
+			<a href="https://open.spotify.com/album/3qgDvO08Y80fcmDPw1k5Kw" target="_blank"><img width="50%" src="https://i.scdn.co/image/ab67616d00001e020f418b89b75d924d23904ee7" /></a>
+		</div>
+	</div>
 </Layout>

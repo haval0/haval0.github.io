@@ -1,0 +1,80 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { Image } from 'astro:assets';
+import studiousScreenshot from '../assets/studious_screenshot.png';
+
+const pageTitle = "Projects ~ haval0 website";
+const projects =
+  [
+    {
+      link: "https://github.com/haval0/millions",
+      title: "millions",
+      image: import('../assets/github_pfp.png'),
+      desc: "Full stack student app for events and news. Rust + Postgres backend serving a PWA with HTMX.",
+    },
+    {
+      link: "https://github.com/haval0/studious",
+      title: "studious",
+      image: import('../assets/studious_screenshot.png'),
+      desc: "Previous frontend for `millions`. React Native student union app for events, news, social activities",
+    },
+    {
+      link: "https://interactive-rocket.github.io",
+      title: "Lost to Time",
+      image: import('../assets/losttotime_screenshot.png'),
+      desc: "Unity 3d puzzle/Portal-like game where you use time-manipulation powers to escape a retro-futuristic research facility",
+    }
+  ]
+---
+<Layout pageTitle={pageTitle}>
+	<h1>Going to list all (not all) my projects with nice cards with descriptions and images and titles here to show off</h1>
+  <ul class="cards-list">
+    {
+      projects.map((project) => (
+        <li>
+          <a href={project.link} target="_blank">
+            <h4>{project.title}</h4>
+            <Image src={project.image} alt=""/>
+            <p>{project.desc}</p>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</Layout>
+
+<style>
+  .cards-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    list-style: none;
+    background-color: var(--secondary-bg-color);
+  }
+
+  .cards-list li {
+    background-color: var(--main-bg-color);
+  }
+
+  .cards-list li:hover {
+    background-color: var(--accent-color);
+  }
+
+  .cards-list li a {
+    color: var(--text-color);
+    text-decoration: none;
+  }
+
+  .cards-list li a img {
+    max-width: 100%;
+    width: auto;
+    max-height: 200px;
+    display: block;
+    margin: auto;
+  }
+
+  .cards-list li a h4 {
+    color: var(--primary-color) !important;
+    text-align: center;
+  }
+</style>

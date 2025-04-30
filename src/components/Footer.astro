@@ -1,0 +1,21 @@
+---
+import { EMAIL } from '../consts.ts';
+---
+<footer>
+  <a href="https://github.com/haval0" target="_blank">github</a>
+  <a href={`mailto:${EMAIL}`} target="_blank">email</a>
+</footer>
+
+<style>
+  footer {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+  a {
+    padding: 0.5rem 1rem;
+    color: white;
+    background-color: var(--primary-color);
+    text-decoration: none;
+  }
+</style>

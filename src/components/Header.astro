@@ -1,0 +1,33 @@
+---
+import Hamburger from './Hamburger.astro';
+import Navigation from './Navigation.astro';
+---
+<header>
+  <div id="title-bar">
+    <Hamburger />
+    <h1 id="title">haval0 website</h1>
+  </div>
+  <nav>
+    <Navigation />
+  </nav>
+</header>
+
+<style>
+  #title {
+    background-color: var(--secondary-bg-color);
+    display: inline;
+    margin-top: 0;
+  }
+
+  #title-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  @media screen and (min-width: 636px) {
+    #title {
+      margin-left: 5em;
+    }
+  }
+</style>

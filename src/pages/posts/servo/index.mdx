@@ -1,0 +1,155 @@
+---
+layout: ../../../layouts/Layout.astro
+title: 'Browser Developer for a Day'
+pubDate: 2025-04-07
+description: 'Contributing to Servo on a whim, and learning some things in the process.'
+author: 'me'
+image:
+    url: 'https://servo.org/img/servo-color.png'
+    alt: 'Servo logo'
+tags: ["browser", "servo", "open source"]
+---
+# Browser Developer for a Day
+
+Published on: 2025-04-07
+
+_NOTE: I know this post is very "me, me, me". But that's the easiest way to write. It'll get better with time..._
+
+## I Need a Better Browser
+
+This weekend I came across a recent status update video from the Ladybird browser project. Because it had been a while since my last attempt, I decided to try to fire up their browser again: `nix run nixpkgs#ladybird`. Compiling... compiling... window pops up... boom! CRASH :(
+
+This is the same problem I've been having ever since I started using NixOS last fall, and I've not dug far enough into the nixpkgs derivation or Ladybird repo or whereever to find out what's the cause. And I wasn't gonna do that this time either.
+
+Now, the Ladybird status update also mentioned my other favorite indie browser Servo (not NetSurf). Servo starts just fine on my machine, but using it for anything at all really is a pain. And they just don't seem to have even nearly the pace of improvement that Ladybird enjoys.
+
+What kind of issues did I spot in Servo? I can't press Alt+D to select the address bar. I can't highlight any text and there is no right click menu. When I tried navigating away from the homepage, which is servo.org, I see that most pages can't render properly, it's quite slow, and keeps my CPU running even when nothing is happening on the page.
+
+Despite all that, I did not want to give up. I really do need a better browser. We all do. If I could only just at least load my own dead simple pure HTML sites when I am developing, then that would be a great step. I don't need the JavaScript monstrosities to run well, just the simple stuff.
+
+## Doing Something About It
+
+If I was willing to write C++, then I probably would've picked Ladybird. But I was not. I am hoping for some _swift_ progress with their transition to Swift... Keep that in.
+
+I am very comfortable with Rust. And not only that, Servo also have [this page](https://starters.servo.org/) describing simple beginner issues. They basically funnel you into that page starting with a big green "Get Involved" button on the default Servo browser new tab page (servo.org).
+
+From the list of beginner issues I identified [one which was not being worked on yet](https://github.com/servo/servo/issues/35391). If you know a little CSS, enough to know how `position: absolute` and the like work, then you should be able to understand this one.
+
+The premise is that putting the `filter` property on an HTML element will actually establish a "containing block" for absolute and fixed positioned descendants. Basically, if an element has a `filter`, then you can automatically use `position: absolute` & co on child elements, no need to also set `position: relative` or similar manually on the parent. Just a `filter` does the job.
+
+BUT here's the catch. This only applies when the element with a `filter` is *not the root element*. It was this root element check that Servo was missing, which means this behavior was unwantedly present also on root elements.
+
+The above linked issue gives a nice demonstration of the problem like so:
+
+```html
+<!DOCTYPE html>
+<html style="filter: blur(0px); width: 100px; height: 100px; border: 5px solid cyan">
+<body style="width: 50%; height: 50%; border: 5px solid magenta; position: absolute">
+```
+import servo from '_servo.png';
+import expected from '_expected.png';
+
+<table>
+<thead>
+<tr>
+ <th>Servo</th>
+ <th>Expected</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+ <td><img src={servo.src} /></td>
+ <td><img src={expected.src} /></td>
+</tr>
+</tbody>
+</table>
+
+## Drill to the Core
+
+At first, the fix did seem simple. A recent PR had added a `FragmentFlags::IS_ROOT_ELEMENT` which should allow me to check and avoid "establishing a containing block" on root elements. The function where I was supposed to perform this check had an instance of these `FragmentFlags` passed in as an argument. I simply added the check and a comment referencing the web standard for how it should work. One (half) line of code in total. But it didn't work at all. Nothing changed.
+
+```rust
+// From <https://www.w3.org/TR/filter-effects-1/#propdef-filter>:
+ // > A value other than none for the filter property results in the creation of a containing
+ // > block for absolute and fixed positioned descendants unless the element it applies to is
+ // > a document root element in the current browsing context.
+ if !self.get_effects().filter.0.is_empty() &&
+     !fragment_flags.contains(FragmentFlags::IS_ROOT_ELEMENT)
+ {
+     return true;
+ }
+ ```
+ _Fix applied. Why isn't it working?_
+
+I had to go digging in the code, following the function call chain upwards and upwards. The big issue was that the `FragmentFlags` passed in was a dummy, constructed as empty just because they had been deemed irrelevant for that case based on context. Now the context had changed, since the flags now also supplied vital information about whether the element was a root.
+
+Suddenly my small, neat, and tidy fix, was forced to expand. Far enough up the call chain, up all the different possible call chains, I was able to find sources where I could exctract valid `FragmentFlags` and pass them down to my function. That meant I also had to add an extra argument to several intermediary functions on the way. All in all I ended up changing more than 10 different code files in the Servo layout engine.
+
+Once I got the code compiling, it all just seemed to work right away. This is why I like Rust. The below image shows Servo working according to spec with the same test from earlier, in a wide browser window:
+
+import beautiful from '_beautiful.png';
+
+<img src={beautiful.src} />
+
+## Web Platform Tests
+
+Now, manual testing certainly is not going to cut it for any sort of large software project. To satisfy established web standards, Servo relies on "Web Platform Tests", a shared test suite collection with thousands of individual test cases. Servo tracks which of these tests are expected to pass at their current stage of development, ensuring gradual progress and no regressions.
+
+I had to see if my fix was covered by any existing test, or if I needed to create a new test myself. I started by reading Servo's documentation about testing, and was able to find that the relevant spec for the feature I was fixing had a linked test suite. Each test had its own little description. I quickly found a test specifically meant to apply to my case. I ran the test and it passed.
+
+The next step was to update the expected result for the test. Now that the test was passing, I had to go delete a `.ini` file corresponding to the test that used to specify that it should fail. Once that was done, push to GitHub, and I officially had a complete PR with both a fix and a test!
+
+## So We Back in the Mine
+
+It's never quite that easy, though, is it? Once again, I found yet another thing needing to be tucked into my patch. This time it was related behavior for the `will-change` CSS property.
+
+Apparently, `will-change: foo` should have matching behavior in regards to "establishing containing blocks for absolute and fixed positioned descendants" as if `foo` had been applied to the element directly. So `will-change: filter` should behave the same as just `filter`, in my case. The original GitHub issue I was solving had requested that this be fixed at the same time.
+
+While it had been easy to find where the code was checking for the presence of a `filter` property for the previous part of my fix, this one was tougher. Where were they checking for `will-change: filter`?
+
+The function that was the core of my fix did do a check for `WillChangeBits::FIXPOS_CB_NON_SVG`, but was `FIXPOS_CB_NON_SVG` the same as `filter`? Or did `WillChangeBits` perhaps have a different flag for `filter` specifically? It was time to go digging once again.
+
+```rust
+// From <https://www.w3.org/TR/css-will-change/#valdef-will-change-custom-ident>:
+// > If any non-initial value of a property would cause the element to generate a
+// > containing block for fixed positioned elements, specifying that property in will-change
+// > must cause the element to generate a containing block for fixed positioned elements.
+let will_change_bits = self.clone_will_change().bits;
+if will_change_bits.intersects(WillChangeBits::FIXPOS_CB_NON_SVG) ||
+    (will_change_bits
+        .intersects(WillChangeBits::TRANSFORM | WillChangeBits::PERSPECTIVE) &&
+        self.is_transformable(fragment_flags))
+{
+    return true;
+}
+```
+_The flag "FIXPOS_CB_NON_SVG". Is this it?_
+
+My approach was to go read the source where `WillChangeBits` was defined. That turned out to be in another crate, the `stylo` crate - Servo's and Firefox' shared CSS engine.
+
+Once there, I found that no, `WillChangeBits` does not have a flag specifically for `filter`. There was, however, a related `features` struct that would contain this information. But it was a private field and thus could not be accessed by me.
+
+So then, what specifically was `WillChangeBits::FIXPOS_CB_NON_SVG`? From reading the source I could tell that currently it was applied for `will-change: filter` and `will-change: backdrop-filter`, both of which should have the behavior that I was trying to implement. Good. But the flag also applied for `-moz-fixed-pos-containing-block`, and what the hell is that? 0 hits on Google. Maybe I don't have to care about that one.
+
+I decided to go ahead with the `WillChangeBits::FIXPOS_CB_NON_SVG`-based implementation, and then simply describe my concerns and ask the Servo maintainers to verify that it's correct before merge. Above my pay grade.
+
+With that changed, I got yet another test passing. It was time for some feedback on my PR.
+
+## What Will They Say?
+
+11 files and a bunch of function signatures changed. Two more tests are now passing. I tried my best to describe my results, my decisions and doubts, and waited for a review.
+
+Just a couple hours later I hear back. It's the same guy that had opened the original issue for my fix. He's pushed an update to my PR with a simplification, he'll be back in a couple days with a full review. Seems to me like we are making progress towards a merge.
+
+The simplification he added was to combine two arguments in most of the functions I touched into one. That way the number of arguments stayed the same, while changing one of the previous arguments to instead be a larger struct containing more data. To do this he had to add a couple of `impl`s to simplify constructing the new function argument.
+
+That simplification is the sort of thing I decided I would simply not have the right knowledge of the codebase to make all the right tradeoffs and tie it all together optimally, so I went ahead with the simple way. I'm glad to be able to count on experienced Servo programmers to make my simple fixes more elegant.
+
+My fix also seems to somehow have exposed some inconsistencies in audio tests (?), as one of the other maintainers chimed in that he had filed a bug report in that area.
+
+## The End
+
+And that was that, more or less. I guess the message is to just try things, you will probably learn something, and it doesn't have to be so difficult.
+
+
+_All code in this article is from the Servo repository and is licensed under the [MPL-2.0](https://raw.githubusercontent.com/servo/servo/0caa271176d4670eb06bedd05cdffb24df08fc4f/LICENSE)_
