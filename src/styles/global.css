@@ -83,16 +83,15 @@ table, th, td {
 
 @media screen and (min-width: 636px) {
   .nav-links {
-    margin-left: 5em;
-    display: block;
+    display: flex;
     position: static;
     width: auto;
     background: none;
+    gap: 15px;
   }
 
   .nav-links a {
     display: inline-block;
-    padding: 15px 20px;
   }
 
   .hamburger {

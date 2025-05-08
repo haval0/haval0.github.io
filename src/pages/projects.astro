@@ -27,7 +27,7 @@ const projects =
   ]
 ---
 <Layout pageTitle={pageTitle}>
-	<h1>Going to list all (not all) my projects with nice cards with descriptions and images and titles here to show off</h1>
+	<h1>(Some of) My Projects</h1>
   <ul class="cards-list">
     {
       projects.map((project) => (
@@ -45,6 +45,7 @@ const projects =
 
 <style>
   .cards-list {
+    padding: 1rem;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 20px;
@@ -54,6 +55,7 @@ const projects =
 
   .cards-list li {
     background-color: var(--main-bg-color);
+    padding: 10px;
   }
 
   .cards-list li:hover {

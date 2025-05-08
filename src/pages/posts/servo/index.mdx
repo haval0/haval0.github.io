@@ -1,7 +1,7 @@
 ---
 layout: ../../../layouts/Layout.astro
 title: 'Browser Developer for a Day'
-pubDate: 2025-04-07
+pubDate: 2025-05-08
 description: 'Contributing to Servo on a whim, and learning some things in the process.'
 author: 'me'
 image:
@@ -11,31 +11,29 @@ tags: ["browser", "servo", "open source"]
 ---
 # Browser Developer for a Day
 
-Published on: 2025-04-07
-
-_NOTE: I know this post is very "me, me, me". But that's the easiest way to write. It'll get better with time..._
+Published on: 2025-05-08
 
 ## I Need a Better Browser
 
-This weekend I came across a recent status update video from the Ladybird browser project. Because it had been a while since my last attempt, I decided to try to fire up their browser again: `nix run nixpkgs#ladybird`. Compiling... compiling... window pops up... boom! CRASH :(
+This weekend (well, a couple weekends ago now) I came across a recent status update video from the Ladybird browser project. Because it had been a while since my last attempt, I decided to try to fire up their browser again: `nix run nixpkgs#ladybird`. Compiling... compiling... window pops up... boom! CRASH :(
 
-This is the same problem I've been having ever since I started using NixOS last fall, and I've not dug far enough into the nixpkgs derivation or Ladybird repo or whereever to find out what's the cause. And I wasn't gonna do that this time either.
+This is the same problem I've been having ever since I started using NixOS last fall, and I've not dug far enough into the nixpkgs derivation or Ladybird repo or whereever to find out what's the cause. And I wasn't gonna do that this time either, for I had another thing in mind.
 
-Now, the Ladybird status update also mentioned my other favorite indie browser Servo (not NetSurf). Servo starts just fine on my machine, but using it for anything at all really is a pain. And they just don't seem to have even nearly the pace of improvement that Ladybird enjoys.
+The Ladybird status update also mentioned my other favorite indie browser: Servo (not NetSurf). Servo starts just fine on my machine, but using it for anything at all really is a pain. And they just don't seem to have even nearly the pace of improvement that Ladybird enjoys.
 
 What kind of issues did I spot in Servo? I can't press Alt+D to select the address bar. I can't highlight any text and there is no right click menu. When I tried navigating away from the homepage, which is servo.org, I see that most pages can't render properly, it's quite slow, and keeps my CPU running even when nothing is happening on the page.
 
-Despite all that, I did not want to give up. I really do need a better browser. We all do. If I could only just at least load my own dead simple pure HTML sites when I am developing, then that would be a great step. I don't need the JavaScript monstrosities to run well, just the simple stuff.
+Despite all that, I did not want to give up. I really do need a better browser. *Humanity* needs a better browser. Well, if I could only just at least load my own dead simple pure HTML sites while I am developing them, then that would be a great step. I don't need the JavaScript monstrosities to run well, just the simple stuff.
 
 ## Doing Something About It
 
 If I was willing to write C++, then I probably would've picked Ladybird. But I was not. I am hoping for some _swift_ progress with their transition to Swift... Keep that in.
 
-I am very comfortable with Rust. And not only that, Servo also have [this page](https://starters.servo.org/) describing simple beginner issues. They basically funnel you into that page starting with a big green "Get Involved" button on the default Servo browser new tab page (servo.org).
+I am very comfortable with Rust. And not only that, Servo also has [this page](https://starters.servo.org/) describing simple beginner issues. They actually funnel you into that page starting with a big green "Get Involved" button on the default Servo browser new tab page (servo.org).
 
 From the list of beginner issues I identified [one which was not being worked on yet](https://github.com/servo/servo/issues/35391). If you know a little CSS, enough to know how `position: absolute` and the like work, then you should be able to understand this one.
 
-The premise is that putting the `filter` property on an HTML element will actually establish a "containing block" for absolute and fixed positioned descendants. Basically, if an element has a `filter`, then you can automatically use `position: absolute` & co on child elements, no need to also set `position: relative` or similar manually on the parent. Just a `filter` does the job.
+The premise is that putting the `filter` property on an HTML element will actually establish a "containing block" for absolute and fixed positioned descendants. Basically, if an element has a `filter`, then you can automatically use `position: absolute` & Co. on child elements, no need to also set `position: relative` or similar manually on the parent. Just a `filter` does the job.
 
 BUT here's the catch. This only applies when the element with a `filter` is *not the root element*. It was this root element check that Servo was missing, which means this behavior was unwantedly present also on root elements.
 
@@ -147,9 +145,11 @@ That simplification is the sort of thing I decided I would simply not have the r
 
 My fix also seems to somehow have exposed some inconsistencies in audio tests (?), as one of the other maintainers chimed in that he had filed a bug report in that area.
 
+In the end, after a fairly unproblematic review and small fix from the relevant maintainer, my PR was merged. I am now the proud owner of 1x bug fix commit to the Servo browser project. Hurray!
+
 ## The End
 
-And that was that, more or less. I guess the message is to just try things, you will probably learn something, and it doesn't have to be so difficult.
+And that was that, more or less. The full extent of my efforts was around one day, or one night + one afternoon. I guess the message is to just try things, you will probably learn something, and it doesn't have to be so difficult. Well that may be the message of most things I do.
 
 
 _All code in this article is from the Servo repository and is licensed under the [MPL-2.0](https://raw.githubusercontent.com/servo/servo/0caa271176d4670eb06bedd05cdffb24df08fc4f/LICENSE)_
